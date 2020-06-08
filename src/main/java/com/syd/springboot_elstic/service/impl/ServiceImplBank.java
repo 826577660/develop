@@ -1,22 +1,35 @@
 package com.syd.springboot_elstic.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.syd.springboot_elstic.dao.DaoBank;
 import com.syd.springboot_elstic.entity.Account;
 import com.syd.springboot_elstic.service.ServiceBank;
+import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.Cancellable;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.rest.RestStatus;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -97,7 +110,23 @@ public class ServiceImplBank implements ServiceBank {
 
     @Override
     public Account findDoc(String id) {
-        return daoBank.findById(id).get();
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String,Object> map = new HashMap<String,Object>();
+        GetRequest request = new GetRequest();
+        request.index("bank").id("TlFgWXIBCY3yqKirllPf");
+        GetResponse response = null;
+        Account account = null;
+        try{
+            response = client.get(request,RequestOptions.DEFAULT);
+            if (response.isExists()){
+                map = response.getSourceAsMap();
+                account = mapper.readValue(mapper.writeValueAsString(map),Account.class);
+                return account;
+            }
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+        return account;
     }
 
     @Override
@@ -151,5 +180,50 @@ public class ServiceImplBank implements ServiceBank {
         }
         return b;
 
+    }
+
+
+
+
+    @Override
+    public List<Map<String,Object>> getDoc(int fieldName) {
+        SearchRequest searchRequest = new SearchRequest("bank");
+        SearchSourceBuilder builder = new SearchSourceBuilder();
+        QueryBuilder query =  QueryBuilders.matchQuery("age",fieldName);
+        builder.query(query);
+
+        HighlightBuilder highlightBuilder = new HighlightBuilder();
+        HighlightBuilder.Field field = new HighlightBuilder.Field("age");
+        field.highlighterType("unified");
+        highlightBuilder.field(field);
+        builder.highlighter(highlightBuilder);
+        builder.from(0);
+        builder.size(10);
+        searchRequest.source(builder);
+        final SearchResponse response = null;
+        List<Map<String,Object>> searchList = new ArrayList<Map<String,Object>>();
+
+        //异步执行
+        ActionListener<SearchResponse> listener = new ActionListener<SearchResponse>() {
+            @Override
+            public void onResponse(SearchResponse searchResponse) {
+                System.out.println("执行完成:"+searchResponse);
+                //todo
+                SearchHit[] searchHit = searchResponse.getHits().getHits();
+                for (SearchHit hit:searchHit){
+                    Map<String,Object> map = hit.getSourceAsMap();
+                    searchList.add(map);
+                }
+
+                System.out.println("result:"+searchList);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                e.printStackTrace();
+            }
+        };
+        client.searchAsync(searchRequest,RequestOptions.DEFAULT,listener);
+        return searchList;
     }
 }

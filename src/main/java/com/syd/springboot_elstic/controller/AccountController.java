@@ -2,6 +2,7 @@ package com.syd.springboot_elstic.controller;
 
 import com.syd.springboot_elstic.entity.Account;
 import com.syd.springboot_elstic.service.ServiceBank;
+import org.elasticsearch.client.Cancellable;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -93,6 +94,12 @@ public class AccountController {
 
         return serviceBank.exist(id);
 
+    }
+
+    @RequestMapping(value = "/getDoc",method = RequestMethod.GET)
+    @ResponseBody
+    public Object getDoc(int  fieldName){
+        return serviceBank.getDoc(fieldName);
     }
 
 }

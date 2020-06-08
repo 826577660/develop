@@ -12,7 +12,7 @@ import org.springframework.data.elasticsearch.annotations.Document;
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
-@Document(indexName = "bank",type = "account")
+@Document(indexName = "bank")
 public class Account {
 
     private String id;

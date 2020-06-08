@@ -1,6 +1,8 @@
 package com.syd.springboot_elstic.service;
 
 import com.syd.springboot_elstic.entity.Account;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.Cancellable;
 import org.elasticsearch.rest.RestStatus;
 
 import java.util.List;
@@ -31,4 +33,6 @@ public interface ServiceBank {
     RestStatus deleteDoc(String id);
 
     boolean exist(String id);
+
+    List<Map<String,Object>> getDoc(int fieldName);
 }
